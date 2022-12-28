@@ -14,32 +14,31 @@ type ChartResponse struct {
 	Points []ChartPoint `json:"points"`
 }
 
-var Chart []ChartPoint
-
-func PutValues(c []ChartPoint) {
-	Chart = c
+type Instace struct {
+	Chart []ChartPoint
 }
 
-func Init() {
+func (i *Instace) PutValues(c []ChartPoint) {
+	i.Chart = c
+}
+
+func New() *Instace {
+	chart := make([]ChartPoint, 0)
+	instance := Instace{
+		Chart: chart,
+	}
+	return &instance
+}
+
+func (i *Instace) Start() {
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		http.ServeFile(writer, request, "./index.html")
 	})
 
 	http.HandleFunc("/graph", func(w http.ResponseWriter, r *http.Request) {
-		/*
-			var chart []ChartPoint
-			points := []float64{1, 3, 4.5, 5, 10}
-			for k, v := range points {
-				ch := ChartPoint{
-					Label: strconv.Itoa(k),
-					Value: v,
-				}
-				chart = append(chart, ch)
-			}
 
-		*/
 		resp := ChartResponse{
-			Points: Chart,
+			Points: i.Chart,
 		}
 		slb, err := json.Marshal(resp)
 		if err != nil {
