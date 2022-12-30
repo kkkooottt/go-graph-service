@@ -15,19 +15,21 @@ type ChartResponse struct {
 }
 
 type Instace struct {
+	Port  string
 	Chart []ChartPoint
+}
+
+func New(port string) *Instace {
+	chart := make([]ChartPoint, 0)
+	instance := Instace{
+		Port:  port,
+		Chart: chart,
+	}
+	return &instance
 }
 
 func (i *Instace) PutValues(c []ChartPoint) {
 	i.Chart = c
-}
-
-func New() *Instace {
-	chart := make([]ChartPoint, 0)
-	instance := Instace{
-		Chart: chart,
-	}
-	return &instance
 }
 
 func (i *Instace) Start() {
@@ -37,6 +39,7 @@ func (i *Instace) Start() {
 
 	http.HandleFunc("/graph", func(w http.ResponseWriter, r *http.Request) {
 
+		fmt.Println("graph", i.Chart)
 		resp := ChartResponse{
 			Points: i.Chart,
 		}
@@ -46,10 +49,12 @@ func (i *Instace) Start() {
 		}
 		w.Write(slb)
 	})
+	go func() {
+		fmt.Println("Server is listening...on ", i.Port)
+		err := http.ListenAndServe(":"+i.Port, nil)
 
-	fmt.Println("Server is listening...on 8080")
-	err := http.ListenAndServe(":8080", nil)
+		fmt.Println(err)
+		fmt.Println("Unexpected exit...")
+	}()
 
-	fmt.Println(err)
-	fmt.Println("Unexpected exit...")
 }
