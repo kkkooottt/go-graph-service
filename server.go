@@ -3,7 +3,8 @@ package graph
 import (
 	"embed"
 	"encoding/json"
-	"fmt"
+	"html/template"
+	"log"
 	"net/http"
 )
 
@@ -20,6 +21,11 @@ type Instace struct {
 	Chart []ChartPoint
 }
 
+var (
+	//go:embed static
+	res embed.FS
+)
+
 func New(port string) *Instace {
 	chart := make([]ChartPoint, 0)
 	instance := Instace{
@@ -34,14 +40,26 @@ func (i *Instace) PutValues(c []ChartPoint) {
 }
 
 func (i *Instace) Start() {
-	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		http.FileServer(http.FS(GetStatic()))
+	http.HandleFunc("/", func(w http.ResponseWriter, request *http.Request) {
 		//http.ServeFile(writer, request, "./index.html")
+		tpl, err := template.ParseFS(res, "static/index.html")
+		if err != nil {
+			log.Printf("page %s not found in pages cache...", request.RequestURI)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		data := map[string]interface{}{
+			"userAgent": request.UserAgent(),
+		}
+		if err := tpl.Execute(w, data); err != nil {
+			return
+		}
 	})
 
 	http.HandleFunc("/graph", func(w http.ResponseWriter, r *http.Request) {
 
-		fmt.Println("graph", i.Chart)
 		resp := ChartResponse{
 			Points: i.Chart,
 		}
@@ -51,19 +69,13 @@ func (i *Instace) Start() {
 		}
 		w.Write(slb)
 	})
-	go func() {
-		fmt.Println("Server is listening...on ", i.Port)
-		err := http.ListenAndServe(":"+i.Port, nil)
 
-		fmt.Println(err)
-		fmt.Println("Unexpected exit...")
+	http.FileServer(http.FS(res))
+
+	go func() {
+		log.Println("Server is listening...on ", i.Port)
+		err := http.ListenAndServe(":"+i.Port, nil)
+		panic(err)
 	}()
 
-}
-
-//go:embed index.html
-var static embed.FS
-
-func GetStatic() embed.FS {
-	return static
 }
