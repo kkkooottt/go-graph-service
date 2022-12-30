@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -34,7 +35,8 @@ func (i *Instace) PutValues(c []ChartPoint) {
 
 func (i *Instace) Start() {
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		http.ServeFile(writer, request, "./index.html")
+		http.FileServer(http.FS(GetStatic()))
+		//http.ServeFile(writer, request, "./index.html")
 	})
 
 	http.HandleFunc("/graph", func(w http.ResponseWriter, r *http.Request) {
@@ -57,4 +59,11 @@ func (i *Instace) Start() {
 		fmt.Println("Unexpected exit...")
 	}()
 
+}
+
+//go:embed index.html
+var static embed.FS
+
+func GetStatic() embed.FS {
+	return static
 }
