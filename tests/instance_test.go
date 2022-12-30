@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"graph"
+	"github.com/kkkooottt/go-graph-service"
 	"strconv"
 	"testing"
 )
