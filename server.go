@@ -8,17 +8,34 @@ import (
 	"net/http"
 )
 
-type ChartPoint struct {
-	Label string  `json:"label"`
-	Value float64 `json:"value"`
+type Reply struct {
+	Type    string  `json:"type"`
+	Data    Data    `json:"data"`
+	Options Options `json:"options"`
 }
-type ChartResponse struct {
-	Points []ChartPoint `json:"points"`
+type Datasets struct {
+	Label       string    `json:"label"`
+	Data        []float64 `json:"data"`
+	BorderWidth int       `json:"borderWidth"`
+}
+type Data struct {
+	Labels   []string   `json:"labels"`
+	Datasets []Datasets `json:"datasets"`
+}
+type Y struct {
+	BeginAtZero bool `json:"beginAtZero"`
+}
+
+type Scales struct {
+	Y Y `json:"y"`
+}
+type Options struct {
+	//Scales Scales `json:"scales"`
 }
 
 type Instace struct {
 	Port  string
-	Chart []ChartPoint
+	Chart Reply
 }
 
 var (
@@ -26,16 +43,21 @@ var (
 	res embed.FS
 )
 
+const (
+	TypeBar  = "bar"
+	TypeLine = "line"
+)
+
 func New(port string) *Instace {
-	chart := make([]ChartPoint, 0)
+
 	instance := Instace{
 		Port:  port,
-		Chart: chart,
+		Chart: Reply{},
 	}
 	return &instance
 }
 
-func (i *Instace) PutValues(c []ChartPoint) {
+func (i *Instace) PutValues(c Reply) {
 	i.Chart = c
 }
 
@@ -60,10 +82,7 @@ func (i *Instace) Start() {
 
 	http.HandleFunc("/graph", func(w http.ResponseWriter, r *http.Request) {
 
-		resp := ChartResponse{
-			Points: i.Chart,
-		}
-		slb, err := json.Marshal(resp)
+		slb, err := json.Marshal(i.Chart)
 		if err != nil {
 			w.WriteHeader(500)
 		}
